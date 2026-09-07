@@ -1,0 +1,28 @@
+# .dotfiles-sync.yml — workbench-cloud
+#
+# Ecosystem module (workbench-core ARCHITECTURE.md §2/§3): AWS/Azure/GCP CLI
+# aliases and installers. Meaningless standalone — depends on
+# workbench-core's loader and Core API (elevation, installers-common.sh,
+# platform facts).
+#
+# See contracts/manifest-spec.md (in workbench-core) for the full field
+# reference.
+version: 1
+branch: main
+
+core_api: ">=1.1 <2.0"
+sync:
+  enabled: true
+
+register:
+  shell:
+    - src: shell/aws.sh
+      tier: tools
+    - src: shell/azure.sh
+      tier: tools
+  installers:
+    - src: shell/installers.sh
+  getters:
+    - name: cloud
+      function: get-cloud-functions
+      label: "AWS/Azure/GCP CLI helpers"
