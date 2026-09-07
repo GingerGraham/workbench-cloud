@@ -20,3 +20,12 @@ All notable changes to `workbench-cloud` are documented here.
   exist here.
 - `WORKBENCH_OS`/`WORKBENCH_DISTRO`/`WORKBENCH_ARCH` replace
   `DOTFILES_OS`/`DOTFILES_DISTRO`.
+
+### Fixed
+
+- `get-cloud-functions` moved ahead of `shell/aws.sh`'s `command -v aws`
+  guard — it's the module's sole registered getter, so on an Azure-only
+  machine (no `aws` CLI) it was previously never defined, making `azure.sh`'s
+  `az*` aliases/`az-update` unenumerable via `wb functions`.
+- `install-azure`'s macOS branch now propagates `_azure-install-mac`'s exit
+  status instead of always returning success.

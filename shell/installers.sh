@@ -166,7 +166,7 @@ install-azure() {
 
     case "${WORKBENCH_OS}" in
         Mac)
-            _azure-install-mac
+            _azure-install-mac || { log_error "Azure CLI: mac install failed"; return 1; }
             ;;
         Linux)
             # pip is only a fallback for a genuinely unrecognised distro — a
