@@ -111,6 +111,7 @@ _azure-install-debian() {
 
     local az_dist
     az_dist="$(lsb_release -cs 2>/dev/null)"
+    # shellcheck disable=SC1091
     [[ -z "${az_dist}" ]] && az_dist="$(. /etc/os-release 2>/dev/null && echo "${VERSION_CODENAME:-}")"
     [[ -z "${az_dist}" ]] && { log_error "azure-cli: could not determine distro codename"; return 1; }
 
