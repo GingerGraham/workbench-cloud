@@ -4,6 +4,10 @@ All notable changes to `workbench-cloud` are documented here.
 
 ## [Unreleased]
 
+- Added `installed-aws`, `installed-azure`, `installed-gcloud` — reports
+  install status to `wb tools upgrade`/`list --status` (workbench-core
+  §12 D43).
+
 ## [0.1.0] - 2026-09-09
 
 ### Added
