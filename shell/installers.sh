@@ -76,6 +76,10 @@ install-aws() {
     return "${rc}"
 }
 
+installed-aws() {
+    command -v aws &>/dev/null
+}
+
 # ── Azure CLI install ─────────────────────────────────────────────────────────
 # Microsoft publishes a vendor repo for rhel/debian/suse (packages.microsoft.com);
 # Arch has no official package, so it falls back to the community AUR package
@@ -200,6 +204,11 @@ install-azure() {
     fi
 }
 
+# Azure CLI's binary is az, not azure.
+installed-azure() {
+    command -v az &>/dev/null
+}
+
 # ── Google Cloud CLI (gcloud) install ─────────────────────────────────────────
 # Google's official interactive installer is the same script on every distro
 # and macOS (no vendor apt/dnf/zypper repo baked in by default), so there is
@@ -247,4 +256,8 @@ install-gcloud() {
     else
         log_warn "gcloud not found on PATH after install. Check ~/google-cloud-sdk/bin."
     fi
+}
+
+installed-gcloud() {
+    command -v gcloud &>/dev/null
 }
