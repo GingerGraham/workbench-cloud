@@ -18,6 +18,14 @@ All notable changes to `workbench-cloud` are documented here.
   piloted on `workbench-git` first. See `workbench-core`'s
   `docs/decisions-log.md` D60.
 
+### Fixed
+
+- **`install-gcloud` no longer pipes the Google Cloud SDK install script
+  straight into `bash`** — it now downloads to a temp file via
+  `_download_file_robust`, verifies the download landed and is non-empty,
+  then executes the file. Closes a `scan-patterns` CI finding
+  (remote-script-execution pattern).
+
 ## [0.2.0] - 2026-09-09
 
 - Added `installed-aws`, `installed-azure`, `installed-gcloud` — reports
