@@ -238,8 +238,19 @@ install-gcloud() {
 
     command -v curl &>/dev/null || { log_error "curl is required"; return 1; }
 
-    curl -sSL https://sdk.cloud.google.com | bash -s -- --disable-prompts \
-        || { log_error "Google Cloud CLI installer failed"; return 1; }
+    local tmp_script
+    if ! tmp_script="$(mktemp)"; then
+        log_error "Google Cloud CLI: mktemp failed — cannot create a temp file for the install script"
+        return 1
+    fi
+    if ! _download_file_robust "https://sdk.cloud.google.com" "${tmp_script}" || [[ ! -s "${tmp_script}" ]]; then
+        log_error "Google Cloud CLI: install script download failed or was empty"
+        rm -f "${tmp_script}"
+        return 1
+    fi
+    bash "${tmp_script}" --disable-prompts \
+        || { log_error "Google Cloud CLI installer failed"; rm -f "${tmp_script}"; return 1; }
+    rm -f "${tmp_script}"
 
     local sdk_bin="${HOME}/google-cloud-sdk/bin"
     [[ ":${PATH}:" != *":${sdk_bin}:"* ]] && PATH="${sdk_bin}:${PATH}"
