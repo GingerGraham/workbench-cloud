@@ -13,7 +13,8 @@ All notable changes to `workbench-cloud` are documented here.
   getter's static-grep listing couldn't see that runtime guard and
   listed them regardless. Declares `_wb_declare_availability` predicates
   for each, per `workbench-core`'s shared `_<name>-available` convention
-  (`docs/module-authoring.md`, once merged).
+  (`workbench-core`'s `docs/module-authoring.md`, once merged — this repo
+  has no `docs/` directory of its own).
 
 ## [0.2.1] - 2026-09-15
 
