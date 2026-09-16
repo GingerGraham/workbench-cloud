@@ -12,15 +12,19 @@ get-cloud-functions() {
     _get_aliases_in "Cloud aliases" "" "${_dir}/aws.sh" "${_dir}/azure.sh"
 }
 
-# Ported from workbench-precursor's tools/aws.sh, unchanged.
-command -v aws &>/dev/null || return 0
-
-# aws-update is only ever defined once the `command -v aws` guard above has
+# aws-update is only ever defined once the `command -v aws` guard below has
 # passed, but get-cloud-functions' static-grep listing can't see that
 # runtime guard, so without this it would list aws-update even on hosts
-# without aws. Declare its availability predicate so the listing matches
-# reality.
+# without aws. Declared *before* that guard, not after: on a host without
+# aws, the guard below returns out of this file immediately, so anything
+# placed after it (including this declaration) would never run — and
+# _wb_function_available's documented fallback for "no predicate declared"
+# is available, which would silently defeat this on exactly the host where
+# it needs to fire.
 _wb_declare_availability aws aws-update
+
+# Ported from workbench-precursor's tools/aws.sh, unchanged.
+command -v aws &>/dev/null || return 0
 
 # ── functions ─────────────────────────────────────────────────────────────────
 # Thin wrapper — install-aws (shell/installers.sh) already handles both the
