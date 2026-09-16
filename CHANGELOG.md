@@ -4,6 +4,8 @@ All notable changes to `workbench-cloud` are documented here.
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-09-16
+
 ### Fixed
 
 - **`get-cloud-functions` no longer lists `aws-update`, `az-update`, or
