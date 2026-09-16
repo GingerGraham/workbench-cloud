@@ -15,6 +15,13 @@ get-cloud-functions() {
 # Ported from workbench-precursor's tools/aws.sh, unchanged.
 command -v aws &>/dev/null || return 0
 
+# aws-update is only ever defined once the `command -v aws` guard above has
+# passed, but get-cloud-functions' static-grep listing can't see that
+# runtime guard, so without this it would list aws-update even on hosts
+# without aws. Declare its availability predicate so the listing matches
+# reality.
+_wb_declare_availability aws aws-update
+
 # ── functions ─────────────────────────────────────────────────────────────────
 # Thin wrapper — install-aws (shell/installers.sh) already handles both the
 # fresh-install and update-in-place cases across every platform. Kept here as

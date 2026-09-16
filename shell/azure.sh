@@ -5,6 +5,13 @@
 # Ported from workbench-precursor's tools/azure.sh, unchanged.
 command -v az &>/dev/null || return 0
 
+# These aliases and az-update are only ever defined once the `command -v az`
+# guard above has passed, but get-cloud-functions' static-grep listing can't
+# see that runtime guard, so without this it would list them even on hosts
+# without az. Declare their availability predicates so the listing matches
+# reality.
+_wb_declare_availability az azl azlo azs azsl azss az-update
+
 # ── aliases ───────────────────────────────────────────────────────────────────
 alias azl="az login"
 alias azlo="az logout"
