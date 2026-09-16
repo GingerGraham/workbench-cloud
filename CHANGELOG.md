@@ -4,6 +4,18 @@ All notable changes to `workbench-cloud` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`get-cloud-functions` no longer lists `aws-update`, `az-update`, or
+  `az`'s aliases (`azl`, `azlo`, `azs`, `azsl`, `azss`) on hosts missing
+  the corresponding CLI** — these were already self-gated undefined at
+  the file level (`command -v aws`/`command -v az` guards), but the
+  getter's static-grep listing couldn't see that runtime guard and
+  listed them regardless. Declares `_wb_declare_availability` predicates
+  for each, per `workbench-core`'s shared `_<name>-available` convention
+  (`workbench-core`'s `docs/module-authoring.md`, once merged — this repo
+  has no `docs/` directory of its own).
+
 ## [0.2.1] - 2026-09-15
 
 ### Added
