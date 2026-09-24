@@ -160,7 +160,11 @@ _azure-install-debian() {
     ${elevation_cmd} mkdir -p /etc/apt/keyrings
     local key_tmp; key_tmp="$(mktemp)" || return 1
     _microsoft_key_fetch_verified "${key_tmp}" || { rm -f "${key_tmp}"; return 1; }
-    ${elevation_cmd} gpg --dearmor --yes --output /etc/apt/keyrings/microsoft.gpg < "${key_tmp}"
+    if ! ${elevation_cmd} gpg --dearmor --yes --output /etc/apt/keyrings/microsoft.gpg < "${key_tmp}"; then
+        log_error "azure-cli: failed to dearmor the Microsoft signing key"
+        rm -f "${key_tmp}"
+        return 1
+    fi
     rm -f "${key_tmp}"
     ${elevation_cmd} chmod go+r /etc/apt/keyrings/microsoft.gpg
 
