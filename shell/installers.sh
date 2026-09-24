@@ -70,9 +70,16 @@ EOF
 # throwaway keyring — the user's own keyring is never read or modified.
 _aws_verify_installer() {
     local zip="$1" sig="$2" gnupg_home rc
-    command -v gpgv &>/dev/null || { log_error "gpgv is required to verify the AWS CLI installer (dnf install gnupg2)"; return 1; }
+    if ! command -v gpg &>/dev/null || ! command -v gpgv &>/dev/null; then
+        log_error "gpg and gpgv are required to verify the AWS CLI installer (install the gnupg package)"
+        return 1
+    fi
     gnupg_home="$(mktemp -d)" || return 1
-    _aws_cli_public_key | gpg --homedir "${gnupg_home}" --dearmor --output "${gnupg_home}/aws.gpg" 2>/dev/null
+    if ! _aws_cli_public_key | gpg --homedir "${gnupg_home}" --dearmor --output "${gnupg_home}/aws.gpg" 2>/dev/null; then
+        log_error "AWS CLI: failed to import the embedded signing key"
+        rm -rf "${gnupg_home}"
+        return 1
+    fi
     gpgv --keyring "${gnupg_home}/aws.gpg" "${sig}" "${zip}" 2>/dev/null
     rc=$?
     rm -rf "${gnupg_home}"

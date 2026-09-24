@@ -27,7 +27,7 @@ else
     fail "could not find a '# Fingerprint: <hex>.' comment above _aws_cli_public_key"
 fi
 
-GNUPG_HOME="$(mktemp -d)"
+GNUPG_HOME="$(mktemp -d)" || { echo "FAIL: mktemp -d failed — cannot create an isolated GNUPGHOME for this check"; exit 1; }
 trap 'rm -rf "${GNUPG_HOME}"' EXIT
 
 KEY_INFO="$(_aws_cli_public_key | gpg --homedir "${GNUPG_HOME}" --with-colons --import-options show-only --import 2>/dev/null)"
