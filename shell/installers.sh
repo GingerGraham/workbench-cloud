@@ -26,7 +26,7 @@
 # <gpgsecurity@microsoft.com>". Cross-check against
 # https://learn.microsoft.com/en-us/linux/packages if this ever needs
 # refreshing (security review M4).
-_MICROSOFT_KEY_FPR="BC528686B50D79E339D3721CEB3E94ADBE1229CF"
+_MICROSOFT_KEY_FPR="BC528686B50D79E339D3721CEB3E94ADBE1229CF"  # gitleaks:allow -- Microsoft's published repo-signing key fingerprint, public by design
 
 # _microsoft_key_fetch_verified <dest>
 # Downloads microsoft.asc and succeeds only if it carries the pinned
