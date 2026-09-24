@@ -7,8 +7,9 @@
 #
 # WORKBENCH_OS/WORKBENCH_DISTRO/WORKBENCH_ARCH are workbench-core Core API
 # platform facts (contracts/core-api.md), replacing the precursor's
-# DOTFILES_OS/DOTFILES_DISTRO. _download_file_robust comes from
-# workbench-core's Core API (lib/core/installers-common.sh).
+# DOTFILES_OS/DOTFILES_DISTRO. _download_file_robust and _wb_key_has_fingerprint
+# come from workbench-core's Core API (lib/core/installers-common.sh,
+# CORE_API_VERSION 1.4).
 #
 # install-gcloud drops the precursor's _restore_managed_shell_files call:
 # that helper reset workbench-precursor's rc files to their git-committed
@@ -18,6 +19,38 @@
 # timer. workbench-core's rc files are plain stub files written once by
 # `wb install`/`wb apply` (ARCHITECTURE.md §12 D19), never a git-tracked
 # working copy — the problem this workaround solved doesn't exist here.
+
+# Microsoft packages.microsoft.com signing key — fetched directly from
+# https://packages.microsoft.com/keys/microsoft.asc (the same host the
+# installer trusts) on 2026-09-24; UID "Microsoft (Release signing)
+# <gpgsecurity@microsoft.com>". Cross-check against
+# https://learn.microsoft.com/en-us/linux/packages if this ever needs
+# refreshing (security review M4).
+_MICROSOFT_KEY_FPR="BC528686B50D79E339D3721CEB3E94ADBE1229CF"
+
+# _microsoft_key_fetch_verified <dest>
+# Downloads microsoft.asc and succeeds only if it carries the pinned
+# fingerprint (security review M4).
+_microsoft_key_fetch_verified() {
+    local dest="$1"
+    _download_file_robust "https://packages.microsoft.com/keys/microsoft.asc" "${dest}" || return 1
+    if ! _wb_key_has_fingerprint "${dest}" "${_MICROSOFT_KEY_FPR}"; then
+        log_error "Microsoft signing key does not match the pinned fingerprint — refusing to trust it"
+        return 1
+    fi
+}
+
+# _microsoft_import_rpm_key
+_microsoft_import_rpm_key() {
+    local elevation_cmd tmp rc
+    elevation_cmd="$(get-elevation-command)" || return 1
+    tmp="$(mktemp)" || return 1
+    _microsoft_key_fetch_verified "${tmp}" || { rm -f "${tmp}"; return 1; }
+    ${elevation_cmd} rpm --import "${tmp}"
+    rc=$?
+    rm -f "${tmp}"
+    return ${rc}
+}
 
 # ── AWS CLI install ───────────────────────────────────────────────────────────
 # AWS ships the CLI v2 as a self-contained installer bundle rather than distro
@@ -88,11 +121,27 @@ installed-aws() {
 # works everywhere Python does. macOS uses Homebrew.
 _azure-install-rhel() {
     local elevation_cmd; elevation_cmd="$(get-elevation-command)" || return 1
-    ${elevation_cmd} rpm --import https://packages.microsoft.com/keys/microsoft.asc
 
-    if [[ ! -f /etc/yum.repos.d/azure-cli.repo ]]; then
-        ${elevation_cmd} sh -c 'echo -e "[azure-cli]\nname=Azure CLI\nbaseurl=https://packages.microsoft.com/yumrepos/azure-cli\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azure-cli.repo'
+    # Fedora ships azure-cli in its own signed repositories — prefer that
+    # over a third-party repo (security review M4).
+    if [[ -f /etc/fedora-release ]] && command -v dnf &>/dev/null; then
+        if ${elevation_cmd} dnf install -y azure-cli; then
+            return 0
+        fi
+        log_warn "azure-cli not available from Fedora repositories — falling back to Microsoft's repo"
     fi
+
+    _microsoft_import_rpm_key || return 1
+    # Rewritten every time so existing hosts gain includepkgs.
+    printf '%s\n' \
+        '[azure-cli]' \
+        'name=Azure CLI' \
+        'baseurl=https://packages.microsoft.com/yumrepos/azure-cli' \
+        'enabled=1' \
+        'gpgcheck=1' \
+        'gpgkey=https://packages.microsoft.com/keys/microsoft.asc' \
+        'includepkgs=azure-cli' \
+        | ${elevation_cmd} tee /etc/yum.repos.d/azure-cli.repo >/dev/null
 
     if command -v dnf &>/dev/null; then
         ${elevation_cmd} dnf install -y azure-cli
@@ -109,8 +158,10 @@ _azure-install-debian() {
     ${elevation_cmd} apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
 
     ${elevation_cmd} mkdir -p /etc/apt/keyrings
-    curl -sLS https://packages.microsoft.com/keys/microsoft.asc \
-        | ${elevation_cmd} gpg --dearmor --output /etc/apt/keyrings/microsoft.gpg
+    local key_tmp; key_tmp="$(mktemp)" || return 1
+    _microsoft_key_fetch_verified "${key_tmp}" || { rm -f "${key_tmp}"; return 1; }
+    ${elevation_cmd} gpg --dearmor --yes --output /etc/apt/keyrings/microsoft.gpg < "${key_tmp}"
+    rm -f "${key_tmp}"
     ${elevation_cmd} chmod go+r /etc/apt/keyrings/microsoft.gpg
 
     local az_dist
@@ -128,14 +179,14 @@ _azure-install-debian() {
 
 _azure-install-suse() {
     local elevation_cmd; elevation_cmd="$(get-elevation-command)" || return 1
-    ${elevation_cmd} rpm --import https://packages.microsoft.com/keys/microsoft.asc
+    _microsoft_import_rpm_key || return 1
 
     if ! zypper lr 2>/dev/null | grep -qi 'azure-cli'; then
         ${elevation_cmd} zypper addrepo --name 'Azure CLI' --check https://packages.microsoft.com/yumrepos/azure-cli azure-cli
     else
         log_info "azure-cli zypper repo already present"
     fi
-    ${elevation_cmd} zypper --gpg-auto-import-keys refresh
+    ${elevation_cmd} zypper --non-interactive refresh azure-cli
     ${elevation_cmd} zypper install -y --from azure-cli azure-cli
 }
 

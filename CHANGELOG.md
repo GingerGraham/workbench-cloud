@@ -4,6 +4,24 @@ All notable changes to `workbench-cloud` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`install-azure` verifies Microsoft's `packages.microsoft.com` signing
+  key against a pinned fingerprint before trusting it**, on every distro
+  (rhel/debian/suse) — previously any key served from that URL was
+  trusted unconditionally. Fedora now prefers its own signed `azure-cli`
+  package over Microsoft's third-party repo, falling back to it only if
+  unavailable. The rhel repo file now also sets `includepkgs=azure-cli`
+  to scope the third-party repo to that one package, and the suse
+  refresh no longer auto-imports keys for every configured repo. Closes
+  security review M4.
+
+### Changed
+
+- **`core_api` requirement raised to `>=1.4 <2.0`** — `install-azure`'s
+  key-pinning above needs `workbench-core`'s new `_wb_key_has_fingerprint`
+  install helper (`CORE_API_VERSION` 1.4).
+
 ## [0.3.0] - 2026-09-23
 
 ### Added
