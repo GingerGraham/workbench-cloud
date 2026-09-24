@@ -4,6 +4,13 @@ All notable changes to `workbench-cloud` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`install-aws` verifies the AWS CLI installer's PGP signature before
+  running it as root** — the download previously ran unverified. Uses a
+  throwaway keyring against an embedded, pinned AWS CLI Team key; refuses
+  to install on a bad or missing signature. Closes security review M3.
+
 ## [0.3.0] - 2026-09-23
 
 ### Added
