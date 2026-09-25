@@ -7,8 +7,9 @@
 #
 # WORKBENCH_OS/WORKBENCH_DISTRO/WORKBENCH_ARCH are workbench-core Core API
 # platform facts (contracts/core-api.md), replacing the precursor's
-# DOTFILES_OS/DOTFILES_DISTRO. _download_file_robust comes from
-# workbench-core's Core API (lib/core/installers-common.sh).
+# DOTFILES_OS/DOTFILES_DISTRO. _download_file_robust and _wb_key_has_fingerprint
+# come from workbench-core's Core API (lib/core/installers-common.sh,
+# CORE_API_VERSION 1.4).
 #
 # install-gcloud drops the precursor's _restore_managed_shell_files call:
 # that helper reset workbench-precursor's rc files to their git-committed
@@ -19,10 +20,105 @@
 # `wb install`/`wb apply` (ARCHITECTURE.md §12 D19), never a git-tracked
 # working copy — the problem this workaround solved doesn't exist here.
 
+# Microsoft packages.microsoft.com signing key — fetched directly from
+# https://packages.microsoft.com/keys/microsoft.asc (the same host the
+# installer trusts) on 2026-09-24; UID "Microsoft (Release signing)
+# <gpgsecurity@microsoft.com>". Cross-check against
+# https://learn.microsoft.com/en-us/linux/packages if this ever needs
+# refreshing (security review M4).
+_MICROSOFT_KEY_FPR="BC528686B50D79E339D3721CEB3E94ADBE1229CF"  # gitleaks:allow -- Microsoft's published repo-signing key fingerprint, public by design
+
+# _microsoft_key_fetch_verified <dest>
+# Downloads microsoft.asc and succeeds only if it carries the pinned
+# fingerprint (security review M4).
+_microsoft_key_fetch_verified() {
+    local dest="$1"
+    _download_file_robust "https://packages.microsoft.com/keys/microsoft.asc" "${dest}" || return 1
+    if ! _wb_key_has_fingerprint "${dest}" "${_MICROSOFT_KEY_FPR}"; then
+        log_error "Microsoft signing key does not match the pinned fingerprint — refusing to trust it"
+        return 1
+    fi
+}
+
+# _microsoft_import_rpm_key
+_microsoft_import_rpm_key() {
+    local elevation_cmd tmp rc
+    elevation_cmd="$(get-elevation-command)" || return 1
+    tmp="$(mktemp)" || return 1
+    _microsoft_key_fetch_verified "${tmp}" || { rm -f "${tmp}"; return 1; }
+    ${elevation_cmd} rpm --import "${tmp}"
+    rc=$?
+    rm -f "${tmp}"
+    return ${rc}
+}
+
 # ── AWS CLI install ───────────────────────────────────────────────────────────
 # AWS ships the CLI v2 as a self-contained installer bundle rather than distro
 # packages, so the same curl+unzip flow covers every Linux distro; only macOS
 # differs (Homebrew).
+
+# AWS CLI v2 installer signing key — copied from the AWS CLI "Installing or
+# updating the latest version" documentation (Linux, "Verify the integrity
+# and authenticity" section) on 2026-09-24.
+# Fingerprint: FB5DB77FD5C118B80511ADA8A6310ACC4672475C. Key expires
+# 2027-07-01 — AWS extends this key's expiry periodically; if verification
+# starts failing with an expired-key message, refresh the block from the
+# same page.
+_aws_cli_public_key() {
+    cat <<'EOF'
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mQINBF2Cr7UBEADJZHcgusOJl7ENSyumXh85z0TRV0xJorM2B/JL0kHOyigQluUG
+ZMLhENaG0bYatdrKP+3H91lvK050pXwnO/R7fB/FSTouki4ciIx5OuLlnJZIxSzx
+PqGl0mkxImLNbGWoi6Lto0LYxqHN2iQtzlwTVmq9733zd3XfcXrZ3+LblHAgEt5G
+TfNxEKJ8soPLyWmwDH6HWCnjZ/aIQRBTIQ05uVeEoYxSh6wOai7ss/KveoSNBbYz
+gbdzoqI2Y8cgH2nbfgp3DSasaLZEdCSsIsK1u05CinE7k2qZ7KgKAUIcT/cR/grk
+C6VwsnDU0OUCideXcQ8WeHutqvgZH1JgKDbznoIzeQHJD238GEu+eKhRHcz8/jeG
+94zkcgJOz3KbZGYMiTh277Fvj9zzvZsbMBCedV1BTg3TqgvdX4bdkhf5cH+7NtWO
+lrFj6UwAsGukBTAOxC0l/dnSmZhJ7Z1KmEWilro/gOrjtOxqRQutlIqG22TaqoPG
+fYVN+en3Zwbt97kcgZDwqbuykNt64oZWc4XKCa3mprEGC3IbJTBFqglXmZ7l9ywG
+EEUJYOlb2XrSuPWml39beWdKM8kzr1OjnlOm6+lpTRCBfo0wa9F8YZRhHPAkwKkX
+XDeOGpWRj4ohOx0d2GWkyV5xyN14p2tQOCdOODmz80yUTgRpPVQUtOEhXQARAQAB
+tCFBV1MgQ0xJIFRlYW0gPGF3cy1jbGlAYW1hem9uLmNvbT6JAlQEEwEIAD4CGwMF
+CwkIBwIGFQoJCAsCBBYCAwECHgECF4AWIQT7Xbd/1cEYuAURraimMQrMRnJHXAUC
+akV0ygUJDqP4lQAKCRCmMQrMRnJHXFHjD/9eyZLYcKuQOlLvtqSDtUBiEZf6ZZjM
+i3ygYH8rJNtuToUH+HvSpe819urJCquXhDrlK6N+aqW0hCLtNABJG/vsafIgvIYJ
+hSGgpgtNnQyMV1jViRWqPjbouw8OkYKBThUfT1i2Y+wn58ifs6ODBCmTexWtXspA
+Si+Gt49xDOW0APmbOPnI+a4HJW6tVEo6MWS0WjzpiBayR3d1A4pt4YrPfSdDgpLo
+h2SLQqlRqvvVZJaWBjhkErNFpfsBA06sDcPEOb0G8LBUbR4WOcdvhe5LubJbZuxC
+AG9kNPCVeQP1ixwjgjXKysaxeQ6rv0VzIQgRp6tLVLWhy6AKDNvLjFSsmXZ1Wl08
+Y/RlOHXlzLuQMRE6sR1wOdRxc9TsrNWTGiBK65cvSWOy03JeBkQQ8pesqltiyxI9
+U21kkgiXtTSKNGfKK8pO27D81YANhRqPK7iTp6kuFiY2WtOg90KTMNlIT+Ff85Y2
+b1rHj6Z0SrCkJujhWk3IBPic/wJgz01LEc/OAdUPlby90RJZcIBhSlWhT7mXnXIO
+c0HWlNQrns2s3CTyYwZSiSlYe9ApeLwhjDo8NhbFuCAy61l6O5UsR4AfZxx/rGKv
+2wFb1/RN/P4gNe6vmxZAPjR0AQcwD3tc2McimOLr/22kmPz8IH3I0X7WoSFr0Biz
+E91G7bb0hOb/cA==
+=knv7
+-----END PGP PUBLIC KEY BLOCK-----
+EOF
+}
+
+# _aws_verify_installer <zip> <sig>
+# Verifies the detached signature against the embedded key only, using a
+# throwaway keyring — the user's own keyring is never read or modified.
+_aws_verify_installer() {
+    local zip="$1" sig="$2" gnupg_home rc
+    if ! command -v gpg &>/dev/null || ! command -v gpgv &>/dev/null; then
+        log_error "gpg and gpgv are required to verify the AWS CLI installer (install the gnupg package)"
+        return 1
+    fi
+    gnupg_home="$(mktemp -d)" || return 1
+    if ! _aws_cli_public_key | gpg --homedir "${gnupg_home}" --dearmor --output "${gnupg_home}/aws.gpg" 2>/dev/null; then
+        log_error "AWS CLI: failed to import the embedded signing key"
+        rm -rf "${gnupg_home}"
+        return 1
+    fi
+    gpgv --keyring "${gnupg_home}/aws.gpg" "${sig}" "${zip}" 2>/dev/null
+    rc=$?
+    rm -rf "${gnupg_home}"
+    return ${rc}
+}
+
 _aws-install-linux() {
     local arch
     case "${WORKBENCH_ARCH}" in
@@ -37,6 +133,15 @@ _aws-install-linux() {
     log_info "Downloading AWS CLI installer (${arch})..."
     _download_file_robust "https://awscli.amazonaws.com/awscli-exe-linux-${arch}.zip" "${tmp_dir}/awscliv2.zip" \
         || { rm -rf "${tmp_dir}"; return 1; }
+    _download_file_robust "https://awscli.amazonaws.com/awscli-exe-linux-${arch}.zip.sig" "${tmp_dir}/awscliv2.sig" \
+        || { rm -rf "${tmp_dir}"; return 1; }
+    # The installer runs as root — refuse anything not signed by AWS's key
+    # (security review M3).
+    if ! _aws_verify_installer "${tmp_dir}/awscliv2.zip" "${tmp_dir}/awscliv2.sig"; then
+        log_error "AWS CLI: installer signature verification failed — refusing to run it"
+        rm -rf "${tmp_dir}"
+        return 1
+    fi
     unzip -q "${tmp_dir}/awscliv2.zip" -d "${tmp_dir}" \
         || { log_error "AWS CLI: failed to extract installer"; rm -rf "${tmp_dir}"; return 1; }
 
@@ -88,11 +193,27 @@ installed-aws() {
 # works everywhere Python does. macOS uses Homebrew.
 _azure-install-rhel() {
     local elevation_cmd; elevation_cmd="$(get-elevation-command)" || return 1
-    ${elevation_cmd} rpm --import https://packages.microsoft.com/keys/microsoft.asc
 
-    if [[ ! -f /etc/yum.repos.d/azure-cli.repo ]]; then
-        ${elevation_cmd} sh -c 'echo -e "[azure-cli]\nname=Azure CLI\nbaseurl=https://packages.microsoft.com/yumrepos/azure-cli\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azure-cli.repo'
+    # Fedora ships azure-cli in its own signed repositories — prefer that
+    # over a third-party repo (security review M4).
+    if [[ -f /etc/fedora-release ]] && command -v dnf &>/dev/null; then
+        if ${elevation_cmd} dnf install -y azure-cli; then
+            return 0
+        fi
+        log_warn "azure-cli not available from Fedora repositories — falling back to Microsoft's repo"
     fi
+
+    _microsoft_import_rpm_key || return 1
+    # Rewritten every time so existing hosts gain includepkgs.
+    printf '%s\n' \
+        '[azure-cli]' \
+        'name=Azure CLI' \
+        'baseurl=https://packages.microsoft.com/yumrepos/azure-cli' \
+        'enabled=1' \
+        'gpgcheck=1' \
+        'gpgkey=https://packages.microsoft.com/keys/microsoft.asc' \
+        'includepkgs=azure-cli' \
+        | ${elevation_cmd} tee /etc/yum.repos.d/azure-cli.repo >/dev/null
 
     if command -v dnf &>/dev/null; then
         ${elevation_cmd} dnf install -y azure-cli
@@ -109,8 +230,14 @@ _azure-install-debian() {
     ${elevation_cmd} apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
 
     ${elevation_cmd} mkdir -p /etc/apt/keyrings
-    curl -sLS https://packages.microsoft.com/keys/microsoft.asc \
-        | ${elevation_cmd} gpg --dearmor --output /etc/apt/keyrings/microsoft.gpg
+    local key_tmp; key_tmp="$(mktemp)" || return 1
+    _microsoft_key_fetch_verified "${key_tmp}" || { rm -f "${key_tmp}"; return 1; }
+    if ! ${elevation_cmd} gpg --dearmor --yes --output /etc/apt/keyrings/microsoft.gpg < "${key_tmp}"; then
+        log_error "azure-cli: failed to dearmor the Microsoft signing key"
+        rm -f "${key_tmp}"
+        return 1
+    fi
+    rm -f "${key_tmp}"
     ${elevation_cmd} chmod go+r /etc/apt/keyrings/microsoft.gpg
 
     local az_dist
@@ -128,14 +255,14 @@ _azure-install-debian() {
 
 _azure-install-suse() {
     local elevation_cmd; elevation_cmd="$(get-elevation-command)" || return 1
-    ${elevation_cmd} rpm --import https://packages.microsoft.com/keys/microsoft.asc
+    _microsoft_import_rpm_key || return 1
 
     if ! zypper lr 2>/dev/null | grep -qi 'azure-cli'; then
         ${elevation_cmd} zypper addrepo --name 'Azure CLI' --check https://packages.microsoft.com/yumrepos/azure-cli azure-cli
     else
         log_info "azure-cli zypper repo already present"
     fi
-    ${elevation_cmd} zypper --gpg-auto-import-keys refresh
+    ${elevation_cmd} zypper --non-interactive refresh azure-cli
     ${elevation_cmd} zypper install -y --from azure-cli azure-cli
 }
 
