@@ -15,6 +15,10 @@ All notable changes to `workbench-cloud` are documented here.
   to scope the third-party repo to that one package, and the suse
   refresh no longer auto-imports keys for every configured repo. Closes
   security review M4.
+- **`install-aws` verifies the AWS CLI installer's PGP signature before
+  running it as root** — the download previously ran unverified. Uses a
+  throwaway keyring against an embedded, pinned AWS CLI Team key; refuses
+  to install on a bad or missing signature. Closes security review M3.
 
 ### Changed
 
