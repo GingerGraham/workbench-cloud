@@ -4,6 +4,8 @@ All notable changes to `workbench-cloud` are documented here.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-09-25
+
 ### Fixed
 
 - **`install-azure` verifies Microsoft's `packages.microsoft.com` signing
