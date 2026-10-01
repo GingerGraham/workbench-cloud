@@ -12,9 +12,10 @@ All notable changes to `workbench-cloud` are documented here.
   pinned key, so any extra key in that file was trusted too, and the
   dnf repo file kept a remote `gpgkey=` URL that a later `dnf` would
   import from. Now only the pinned key is extracted and installed
-  (`RPM-GPG-KEY-workbench-microsoft` / `/etc/apt/keyrings/microsoft.gpg`),
-  and the `azure-cli` repo file points at the local copy with
-  `includepkgs=azure-cli`. Closes security review follow-ups R1 and R2
+  (`RPM-GPG-KEY-workbench-azure-cli` for the dnf/yum repo,
+  `RPM-GPG-KEY-workbench-microsoft` on SUSE, and
+  `/etc/apt/keyrings/microsoft.gpg` on Debian), and the `azure-cli` repo
+  file points at the local copy with `includepkgs=azure-cli`. Closes security review follow-ups R1 and R2
   for the Azure CLI repository (workbench-core D79).
 
 ### Changed
