@@ -4,6 +4,24 @@ All notable changes to `workbench-cloud` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`install-azure` trusts only the pinned Microsoft key, from a local
+  copy.** Previously the whole downloaded `microsoft.asc` was imported
+  (rpm) or dearmored into the apt keyring once it merely contained the
+  pinned key, so any extra key in that file was trusted too, and the
+  dnf repo file kept a remote `gpgkey=` URL that a later `dnf` would
+  import from. Now only the pinned key is extracted and installed
+  (`RPM-GPG-KEY-workbench-microsoft` / `/etc/apt/keyrings/microsoft.gpg`),
+  and the `azure-cli` repo file points at the local copy with
+  `includepkgs=azure-cli`. Closes security review follow-ups R1 and R2
+  for the Azure CLI repository (workbench-core D79).
+
+### Changed
+
+- **`core_api` requirement raised to `>=1.5 <2.0`** — needs
+  `workbench-core`'s pinned-key install helpers (`CORE_API_VERSION` 1.5).
+
 ## [0.3.1] - 2026-09-25
 
 ### Fixed
