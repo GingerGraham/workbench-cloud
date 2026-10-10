@@ -4,6 +4,8 @@ All notable changes to `workbench-cloud` are documented here.
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-10-10
+
 ### Fixed
 
 - **`install-azure` trusts only the pinned Microsoft key, from a local
