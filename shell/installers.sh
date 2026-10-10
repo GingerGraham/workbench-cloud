@@ -28,28 +28,13 @@
 # refreshing (security review M4).
 _MICROSOFT_KEY_FPR="BC528686B50D79E339D3721CEB3E94ADBE1229CF"  # gitleaks:allow -- Microsoft's published repo-signing key fingerprint, public by design
 
-# _microsoft_key_fetch_verified <dest>
-# Downloads microsoft.asc and succeeds only if it carries the pinned
-# fingerprint (security review M4).
-_microsoft_key_fetch_verified() {
-    local dest="$1"
-    _download_file_robust "https://packages.microsoft.com/keys/microsoft.asc" "${dest}" || return 1
-    if ! _wb_key_has_fingerprint "${dest}" "${_MICROSOFT_KEY_FPR}"; then
-        log_error "Microsoft signing key does not match the pinned fingerprint — refusing to trust it"
-        return 1
-    fi
-}
+_MICROSOFT_KEY_URL="https://packages.microsoft.com/keys/microsoft.asc"
 
 # _microsoft_import_rpm_key
+# Imports only the pinned Microsoft key, from a verified local copy
+# (workbench-core D79 — review follow-up R1).
 _microsoft_import_rpm_key() {
-    local elevation_cmd tmp rc
-    elevation_cmd="$(get-elevation-command)" || return 1
-    tmp="$(mktemp)" || return 1
-    _microsoft_key_fetch_verified "${tmp}" || { rm -f "${tmp}"; return 1; }
-    ${elevation_cmd} rpm --import "${tmp}"
-    rc=$?
-    rm -f "${tmp}"
-    return ${rc}
+    _wb_rpm_import_pinned_key "${_MICROSOFT_KEY_URL}" microsoft "${_MICROSOFT_KEY_FPR}" >/dev/null
 }
 
 # ── AWS CLI install ───────────────────────────────────────────────────────────
@@ -203,17 +188,16 @@ _azure-install-rhel() {
         log_warn "azure-cli not available from Fedora repositories — falling back to Microsoft's repo"
     fi
 
-    _microsoft_import_rpm_key || return 1
-    # Rewritten every time so existing hosts gain includepkgs.
-    printf '%s\n' \
-        '[azure-cli]' \
-        'name=Azure CLI' \
-        'baseurl=https://packages.microsoft.com/yumrepos/azure-cli' \
-        'enabled=1' \
-        'gpgcheck=1' \
-        'gpgkey=https://packages.microsoft.com/keys/microsoft.asc' \
-        'includepkgs=azure-cli' \
-        | ${elevation_cmd} tee /etc/yum.repos.d/azure-cli.repo >/dev/null
+    # Pinned key stored locally, repo limited to azure-cli (workbench-core
+    # D79 — review follow-up R1, R2). Rewritten every run.
+    _wb_dnf_vendor_repo \
+        --id azure-cli \
+        --name "Azure CLI" \
+        --baseurl "https://packages.microsoft.com/yumrepos/azure-cli" \
+        --key-url "${_MICROSOFT_KEY_URL}" \
+        --fingerprint "${_MICROSOFT_KEY_FPR}" \
+        --include azure-cli \
+        || return 1
 
     if command -v dnf &>/dev/null; then
         ${elevation_cmd} dnf install -y azure-cli
@@ -229,16 +213,9 @@ _azure-install-debian() {
     ${elevation_cmd} apt-get update
     ${elevation_cmd} apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
 
-    ${elevation_cmd} mkdir -p /etc/apt/keyrings
-    local key_tmp; key_tmp="$(mktemp)" || return 1
-    _microsoft_key_fetch_verified "${key_tmp}" || { rm -f "${key_tmp}"; return 1; }
-    if ! ${elevation_cmd} gpg --dearmor --yes --output /etc/apt/keyrings/microsoft.gpg < "${key_tmp}"; then
-        log_error "azure-cli: failed to dearmor the Microsoft signing key"
-        rm -f "${key_tmp}"
-        return 1
-    fi
-    rm -f "${key_tmp}"
-    ${elevation_cmd} chmod go+r /etc/apt/keyrings/microsoft.gpg
+    # Only the pinned key is written to the keyring (D79 — follow-up R1).
+    _wb_apt_keyring_pinned "${_MICROSOFT_KEY_URL}" /etc/apt/keyrings/microsoft.gpg "${_MICROSOFT_KEY_FPR}" \
+        || return 1
 
     local az_dist
     az_dist="$(lsb_release -cs 2>/dev/null)"
