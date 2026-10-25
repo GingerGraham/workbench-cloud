@@ -25,5 +25,5 @@ provider.
 
 ## Requires
 
-Nothing at install time — each CLI is installed via its own
-`install-<name>` function (`wb tools update`).
+Nothing at install time — each CLI is installed by its own installer,
+run with `wb tools install <name>`.
