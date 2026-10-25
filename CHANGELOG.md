@@ -4,6 +4,15 @@ All notable changes to `workbench-cloud` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`aws-update` and `az-update` work.** They called `install-aws` /
+  `install-azure` directly, but installer files are never loaded into
+  your shell, so both failed with `command not found`. They now run
+  `wb tools install aws` / `wb tools install azure`. The README no longer
+  points at the removed `wb tools update`. Required by workbench-core's
+  module CI clean-shell check (its `docs/decisions-log.md` D94).
+
 ## [0.3.2] - 2026-10-10
 
 ### Fixed
