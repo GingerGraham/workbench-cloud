@@ -19,6 +19,8 @@ info:
 
 register:
   shell:
+    - src: shell/gcloud.sh
+      tier: env
     - src: shell/aws.sh
       tier: tools
     - src: shell/azure.sh

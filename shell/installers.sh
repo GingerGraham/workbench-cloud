@@ -174,8 +174,9 @@ installed-aws() {
 # Microsoft publishes a vendor repo for rhel/debian/suse (packages.microsoft.com);
 # Arch has no official package, so it falls back to the community AUR package
 # (same yay-or-manual-makepkg pattern as workbench-security's install-1password
-# arch helper); any other/unknown distro falls back further to pip, which
-# works everywhere Python does. macOS uses Homebrew.
+# arch helper), only with WORKBENCH_ALLOW_AUR=true (core D100); any
+# other/unknown distro falls back further to pip, which works everywhere
+# Python does. macOS uses Homebrew.
 _azure-install-rhel() {
     local elevation_cmd; elevation_cmd="$(get-elevation-command)" || return 1
 
@@ -244,16 +245,29 @@ _azure-install-suse() {
 }
 
 _azure-install-arch() {
-    # No official Arch package — community-maintained AUR package.
+    # No official Arch package — community-maintained AUR package. AUR
+    # builds are opt-in (workbench-core docs/decisions-log.md D100): an AUR
+    # package is an unreviewed build script, run as you, then installed as
+    # root.
+    if [[ "${WORKBENCH_ALLOW_AUR:-false}" != "true" ]]; then
+        log_warn "Azure CLI on Arch comes only from the AUR, and AUR installs are off."
+        log_warn "Install it yourself with: yay -S azure-cli"
+        log_warn "Or set WORKBENCH_ALLOW_AUR=true in ~/.config/workbench/local/settings.sh and re-run 'wb tools install azure'."
+        return 1
+    fi
     if command -v yay &>/dev/null; then
         yay -S --noconfirm azure-cli
     else
+        command -v git &>/dev/null \
+            || { log_error "git is required to clone the azure-cli AUR package (or install yay)"; return 1; }
         log_info "yay not found — cloning azure-cli AUR package manually..."
         local tmp_dir; tmp_dir="$(mktemp -d)"
         git clone https://aur.archlinux.org/azure-cli.git "${tmp_dir}/azure-cli" \
             || { log_error "Failed to clone azure-cli AUR package"; rm -rf "${tmp_dir}"; return 1; }
-        ( cd "${tmp_dir}/azure-cli" && makepkg -si --noconfirm )
+        local rc=0
+        ( cd "${tmp_dir}/azure-cli" && makepkg -si --noconfirm ) || rc=1
         rm -rf "${tmp_dir}"
+        return "${rc}"
     fi
 }
 
@@ -362,9 +376,8 @@ install-gcloud() {
     if command -v gcloud &>/dev/null; then
         log_info "Google Cloud CLI installed: $(gcloud --version 2>/dev/null | head -1)"
         echo
-        echo "  ~/google-cloud-sdk/bin is not added to your managed shell rc files automatically."
-        echo "  Add it to PATH yourself in ~/.config/workbench/local/settings.sh, e.g.:"
-        echo "    export PATH=\"\${HOME}/google-cloud-sdk/bin:\${PATH}\""
+        echo "  Start a new shell to get gcloud on PATH (workbench-cloud adds"
+        echo "  ~/google-cloud-sdk/bin for you)."
         echo
         echo "  Authenticate with:"
         echo "    gcloud init"
