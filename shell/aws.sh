@@ -27,9 +27,12 @@ _wb_declare_availability aws aws-update
 command -v aws &>/dev/null || return 0
 
 # ── functions ─────────────────────────────────────────────────────────────────
-# Thin wrapper — install-aws (shell/installers.sh) already handles both the
-# fresh-install and update-in-place cases across every platform. Kept here as
-# a short, memorable name for anyone reaching for "aws-update" out of habit.
+# Thin wrapper — the aws installer (shell/installers.sh) already handles both
+# the fresh-install and update-in-place cases across every platform. Kept here
+# as a short, memorable name for anyone reaching for "aws-update" out of habit.
+# It goes through 'wb tools': installer files are never sourced into the
+# interactive shell, so calling the installer function directly failed with
+# "command not found" (workbench-core docs/decisions-log.md D94).
 aws-update() {
-    install-aws
+    wb tools install aws
 }

@@ -12,10 +12,12 @@ wb add cloud
 
 ## What this gives you
 
-- `aws-update` — thin wrapper around `install-aws` (fresh-install or
+- `aws-update` — runs `wb tools install aws` (fresh-install or
   update-in-place).
-- `az*` aliases (`azl`/`azlo`/`azs`/`azsl`/`azss`) and `az-update`.
-- `install-aws`, `install-azure`, `install-gcloud` — via `wb tools update`.
+- `az*` aliases (`azl`/`azlo`/`azs`/`azsl`/`azss`) and `az-update`, which
+  runs `wb tools install azure`.
+- Installers for `aws`, `azure` and `gcloud` — `wb tools install <name>`
+  to install, `wb tools upgrade <name>` to update one you already have.
 
 `shell/aws.sh`/`shell/azure.sh` each self-guard on the matching CLI being
 present, so installing this module doesn't add noise if you only use one
@@ -23,5 +25,5 @@ provider.
 
 ## Requires
 
-Nothing at install time — each CLI is installed via its own
-`install-<name>` function (`wb tools update`).
+Nothing at install time — each CLI is installed by its own installer,
+run with `wb tools install <name>`.

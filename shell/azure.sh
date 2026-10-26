@@ -24,10 +24,13 @@ alias azsl="az account list --output table"
 alias azss="az account set --subscription"
 
 # ── functions ─────────────────────────────────────────────────────────────────
-# Thin wrapper — install-azure (shell/installers.sh) already handles both
-# the fresh-install and update-in-place cases across every distro and macOS.
-# Kept here as a short, memorable name for anyone reaching for "az-update" out
-# of habit.
+# Thin wrapper — the azure installer (shell/installers.sh) already handles
+# both the fresh-install and update-in-place cases across every distro and
+# macOS. Kept here as a short, memorable name for anyone reaching for
+# "az-update" out of habit. It goes through 'wb tools': installer files are
+# never sourced into the interactive shell, so calling the installer
+# function directly failed with "command not found" (workbench-core
+# docs/decisions-log.md D94).
 az-update() {
-    install-azure
+    wb tools install azure
 }
