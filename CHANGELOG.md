@@ -4,6 +4,8 @@ All notable changes to `workbench-cloud` are documented here.
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-10-26
+
 ### Fixed
 
 - **`aws-update` and `az-update` work.** They called `install-aws` /
