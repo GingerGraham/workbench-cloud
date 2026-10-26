@@ -45,6 +45,21 @@ for key in version core_api register; do
     fi
 done
 
+if [[ -n "${MANIFEST}" ]] && grep -q '^core_api: ">=1.8 <2.0"$' "${MANIFEST}"; then
+    ok "core_api requires 1.8 (core-generated getters, D89)"
+else
+    fail "core_api must be \">=1.8 <2.0\""
+fi
+
+# Core generates get-cloud-functions from register.getters[] (D89). A
+# hand-written one would win over it, and the old one used BASH_SOURCE
+# inside the function, which zsh doesn't set.
+if ! grep -rqE '^[[:space:]]*(function[[:space:]]+)?get-[a-z-]+-functions' "${REPO_ROOT}/shell/"; then
+    ok "shell/ defines no get-*-functions getter (core generates it)"
+else
+    fail "shell/ defines a get-*-functions getter — delete it; core generates it from register.getters[]"
+fi
+
 if [[ -n "${MANIFEST}" ]]; then
     while IFS= read -r src; do
         [[ -z "${src}" ]] && continue

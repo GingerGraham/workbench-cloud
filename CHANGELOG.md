@@ -4,6 +4,20 @@ All notable changes to `workbench-cloud` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`get-cloud-functions` lists the module's names in zsh.** The
+  hand-written getter used `BASH_SOURCE` inside a function, which zsh
+  doesn't set, so in zsh it printed `(none)`. It's gone; workbench-core
+  now generates the getter from the manifest (its `docs/decisions-log.md`
+  D89). Its headers read `AWS/Azure/GCP CLI helpers — functions:` and
+  `… — aliases:`, and `get-cloud-functions` no longer lists itself.
+
+### Changed
+
+- **`core_api` requirement raised to `>=1.8 <2.0`**, for core-generated
+  getters (`CORE_API_VERSION` 1.8).
+
 ## [0.3.3] - 2026-10-26
 
 ### Fixed
