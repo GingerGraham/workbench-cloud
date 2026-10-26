@@ -30,7 +30,7 @@ All notable changes to `workbench-cloud` are documented here.
 
 ### Changed
 
-- **AUR installs are opt-in** (workbench-core `docs/decisions-log.md`
+- **BREAKING: AUR installs are opt-in** (workbench-core `docs/decisions-log.md`
   D100). On Arch, `wb tools install azure` builds the AUR `azure-cli`
   package only with `WORKBENCH_ALLOW_AUR=true` in
   `~/.config/workbench/local/settings.sh`. Without it, it prints
