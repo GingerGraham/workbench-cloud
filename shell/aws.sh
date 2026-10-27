@@ -9,7 +9,8 @@
 # passed, but the getter's static-grep listing can't see that runtime guard,
 # so without this it would list aws-update even on hosts without aws.
 # Declared *before* that guard, not after: on a host without aws, the guard
-# below returns out of this file immediately, so anything placed after it (including this declaration) would never run — and
+# below returns out of this file immediately, so anything placed after it
+# (including this declaration) would never run — and
 # _wb_function_available's documented fallback for "no predicate declared"
 # is available, which would silently defeat this on exactly the host where
 # it needs to fire.
