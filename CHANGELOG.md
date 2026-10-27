@@ -4,6 +4,8 @@ All notable changes to `workbench-cloud` are documented here.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-27
+
 ### Fixed
 
 - **`get-cloud-functions` lists the module's names in zsh.** The
