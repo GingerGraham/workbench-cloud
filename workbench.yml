@@ -10,7 +10,7 @@
 version: 2
 branch: main
 
-core_api: ">=1.5 <2.0"
+core_api: ">=1.8 <2.0"
 sync:
   enabled: true
 
@@ -19,6 +19,8 @@ info:
 
 register:
   shell:
+    - src: shell/gcloud.sh
+      tier: env
     - src: shell/aws.sh
       tier: tools
     - src: shell/azure.sh

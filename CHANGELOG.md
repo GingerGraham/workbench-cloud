@@ -4,6 +4,41 @@ All notable changes to `workbench-cloud` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`get-cloud-functions` lists the module's names in zsh.** The
+  hand-written getter used `BASH_SOURCE` inside a function, which zsh
+  doesn't set, so in zsh it printed `(none)`. It's gone; workbench-core
+  now generates the getter from the manifest (its `docs/decisions-log.md`
+  D89). Its headers read `AWS/Azure/GCP CLI helpers — functions:` and
+  `… — aliases:`, and `get-cloud-functions` no longer lists itself.
+- **Listings say what the `az*` aliases and `az-update` need.** Hidden on
+  a host without `az`, they now show `az (Azure CLI)` and point at
+  `wb tools install azure`. Before, the hint named an `az` installer that
+  doesn't exist.
+- **The Arch fallback of `wb tools install azure` reports a failed
+  build.** A failed `makepkg` returned success.
+
+### Added
+
+- **gcloud is on `PATH` in a new shell.** New `shell/gcloud.sh`
+  (`tier: env`) adds `~/google-cloud-sdk/bin` when it exists, so you no
+  longer edit `settings.sh` after `wb tools install gcloud`.
+- **README: "What installers verify"**, per installer and platform.
+  gcloud's installer is Google's vendor script, run unverified
+  (accepted).
+
+### Changed
+
+- **BREAKING: AUR installs are opt-in** (workbench-core `docs/decisions-log.md`
+  D100). On Arch, `wb tools install azure` builds the AUR `azure-cli`
+  package only with `WORKBENCH_ALLOW_AUR=true` in
+  `~/.config/workbench/local/settings.sh`. Without it, it prints
+  `yay -S azure-cli` for you to run and fails. Without yay it now checks
+  for `git` before cloning.
+- **`core_api` requirement raised to `>=1.8 <2.0`**, for core-generated
+  getters (`CORE_API_VERSION` 1.8).
+
 ## [0.3.3] - 2026-10-26
 
 ### Fixed
