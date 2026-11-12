@@ -50,7 +50,7 @@ _microsoft_import_rpm_key() {
 # starts failing with an expired-key message, refresh the block from the
 # same page.
 _aws_cli_public_key() {
-    cat <<'EOF'
+    command cat <<'EOF'
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 
 mQINBF2Cr7UBEADJZHcgusOJl7ENSyumXh85z0TRV0xJorM2B/JL0kHOyigQluUG
@@ -265,7 +265,7 @@ _azure-install-arch() {
         git clone https://aur.archlinux.org/azure-cli.git "${tmp_dir}/azure-cli" \
             || { log_error "Failed to clone azure-cli AUR package"; rm -rf "${tmp_dir}"; return 1; }
         local rc=0
-        ( cd "${tmp_dir}/azure-cli" && makepkg -si --noconfirm ) || rc=1
+        ( builtin cd "${tmp_dir}/azure-cli" && makepkg -si --noconfirm ) || rc=1
         rm -rf "${tmp_dir}"
         return "${rc}"
     fi

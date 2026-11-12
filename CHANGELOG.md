@@ -4,6 +4,15 @@ All notable changes to `workbench-cloud` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- **No more host aliases inside module code (workbench-core D110).** A bare
+  `cd` or `cat` in `shell/installers.sh` ran whatever the host profile
+  aliased it to, because an alias is baked into a function when the
+  function is defined. They are now `builtin cd` and `command cat`. Adds
+  `tests/check-no-bare-cd.sh` and `tests/check-cd-wrapper.sh` to keep it
+  that way.
+
 ### Changed
 
 - **Bug report template asks for OS family and environment separately.**
