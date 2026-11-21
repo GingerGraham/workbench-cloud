@@ -4,6 +4,8 @@ All notable changes to `workbench-cloud` are documented here.
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-11-21
+
 ### Fixed
 
 - **`install-aws` no longer runs the installer as root against a directory
