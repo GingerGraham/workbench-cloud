@@ -4,6 +4,22 @@ All notable changes to `workbench-cloud` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`install-aws` no longer runs the installer as root against a directory
+  you can write to.** Updating an existing AWS CLI on Linux passed
+  `--bin-dir "$(dirname "$(command -v aws)")"` to the installer, run as
+  root. If `aws` was in `~/.local/bin`, or in a `PATH` directory you control,
+  that was a root write into a place you could redirect. It now resolves
+  the directory and checks it and every parent up to `/`: each must be
+  owned by root and not writable by any user, nor by a group you belong to
+  (a root-owned group-writable directory such as Debian's `root:staff`
+  `/usr/local` is fine if you aren't in that group). If the check fails,
+  it stops before downloading or elevating anything, says which directory
+  and why, and tells you to remove that `aws` or update it manually. The
+  resolved directory is what gets passed to `--bin-dir`. Adds
+  `tests/check-aws-bin-dir.sh`.
+
 ### Changed
 
 - **Agent and contributor guidance covers the stale-base CHANGELOG trap

@@ -104,6 +104,82 @@ _aws_verify_installer() {
     return ${rc}
 }
 
+# _aws_user_in_group <gid>
+# Succeeds when the invoking user belongs to group <gid> (primary or
+# supplementary).
+_aws_user_in_group() {
+    local gid="$1" user_gids
+    user_gids="$(command id -G 2>/dev/null)"
+    case " ${user_gids} " in
+        *" ${gid} "*) return 0 ;;
+    esac
+    return 1
+}
+
+# _aws_safe_bin_dir <aws-path>
+# Decides whether the installer may be run as root with --bin-dir set to the
+# directory holding an existing `aws` (<aws-path>, from `command -v aws`).
+# The installer, as root, creates and replaces a symlink in that directory,
+# so a directory the user can write to would let the user redirect a root
+# write. The directory is accepted only when it, and every parent up to /,
+# is owned by root and not writable by the invoking user:
+#   - owned by someone other than root          -> rejected
+#   - writable by any user (other-write bit)    -> rejected
+#   - group-writable, and the invoking user is  -> rejected
+#     a member of that group
+#   - group-writable, user not in that group    -> accepted (Debian's default
+#     /usr/local is root:staff 2775)
+# On success, prints the symlink-resolved directory (the caller passes that
+# to --bin-dir, so a later swap of a path component cannot redirect the
+# write). On failure, logs why and returns 1; nothing is printed.
+# Uses GNU `stat -c`; only called from the Linux install path.
+_aws_safe_bin_dir() {
+    local aws_path="$1" dir resolved current stat_out owner group mode reason
+
+    if [[ "${aws_path}" != /* ]]; then
+        log_error "AWS CLI: 'aws' resolves to '${aws_path}', which is not a file path (a shell function or alias?) — cannot tell where to update it"
+        log_error "AWS CLI: remove or rename that, or update AWS CLI manually, then re-run"
+        return 1
+    fi
+
+    dir="${aws_path%/*}"
+    [[ -z "${dir}" ]] && dir="/"
+    if ! resolved="$(builtin cd -P -- "${dir}" 2>/dev/null && pwd -P)" || [[ -z "${resolved}" ]]; then
+        log_error "AWS CLI: cannot enter '${dir}' (where 'aws' was found) to check it is safe to update"
+        return 1
+    fi
+
+    current="${resolved}"
+    while true; do
+        if ! stat_out="$(command stat -c '%u %g %a' -- "${current}" 2>/dev/null)"; then
+            log_error "AWS CLI: cannot read the ownership of '${current}'"
+            return 1
+        fi
+        read -r owner group mode <<<"${stat_out}"
+
+        reason=""
+        if [[ "${owner}" != "0" ]]; then
+            reason="owned by uid ${owner}, not root"
+        elif (( (8#${mode} & 8#002) != 0 )); then
+            reason="writable by any user (mode ${mode})"
+        elif (( (8#${mode} & 8#020) != 0 )) && _aws_user_in_group "${group}"; then
+            reason="writable by group ${group}, which you are a member of (mode ${mode})"
+        fi
+
+        if [[ -n "${reason}" ]]; then
+            log_error "AWS CLI: refusing to run the installer as root against '${resolved}': '${current}' is ${reason}"
+            log_error "AWS CLI: a root write into a directory you can modify could be redirected. Remove that 'aws', or update/install AWS CLI manually, then re-run"
+            return 1
+        fi
+
+        [[ "${current}" == "/" ]] && break
+        current="${current%/*}"
+        [[ -z "${current}" ]] && current="/"
+    done
+
+    printf '%s\n' "${resolved}"
+}
+
 _aws-install-linux() {
     local arch
     case "${WORKBENCH_ARCH}" in
@@ -113,6 +189,14 @@ _aws-install-linux() {
     esac
     command -v curl &>/dev/null || { log_error "curl is required for AWS CLI installation"; return 1; }
     command -v unzip &>/dev/null || { log_error "unzip is required for AWS CLI installation"; return 1; }
+
+    # An existing aws is updated in place, in the directory it lives in — but
+    # only if that directory is safe for a root write. Checked before the
+    # download so an unsafe layout fails fast.
+    local bin_dir=""
+    if command -v aws &>/dev/null; then
+        bin_dir="$(_aws_safe_bin_dir "$(command -v aws)")" || return 1
+    fi
 
     local tmp_dir; tmp_dir="$(mktemp -d)"
     log_info "Downloading AWS CLI installer (${arch})..."
@@ -132,9 +216,8 @@ _aws-install-linux() {
 
     local elevation_cmd; elevation_cmd="$(get-elevation-command)" || { rm -rf "${tmp_dir}"; return 1; }
     local rc=0
-    if command -v aws &>/dev/null; then
-        local aws_path; aws_path="$(command -v aws)"
-        ${elevation_cmd} "${tmp_dir}/aws/install" --update --bin-dir "$(dirname "${aws_path}")" || rc=1
+    if [[ -n "${bin_dir}" ]]; then
+        ${elevation_cmd} "${tmp_dir}/aws/install" --update --bin-dir "${bin_dir}" || rc=1
     else
         ${elevation_cmd} "${tmp_dir}/aws/install" || rc=1
     fi

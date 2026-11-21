@@ -13,7 +13,10 @@ wb add cloud
 ## What this gives you
 
 - `aws-update` — runs `wb tools install aws` (fresh-install or
-  update-in-place).
+  update-in-place). On Linux, an existing `aws` is only updated in place
+  if the directory it lives in (and every parent) is root-owned and not
+  writable by you; otherwise the install stops with an explanation and
+  changes nothing.
 - `az*` aliases (`azl`/`azlo`/`azs`/`azsl`/`azss`) and `az-update`, which
   runs `wb tools install azure`.
 - Installers for `aws`, `azure` and `gcloud` — `wb tools install <name>`
