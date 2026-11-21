@@ -57,7 +57,7 @@ fi
 
 # World-writable dir: rejected, whoever owns it.
 world_dir="${WORK_DIR}/world"
-mkdir "${world_dir}" && chmod 777 "${world_dir}"
+mkdir "${world_dir}" && chmod 777 "${world_dir}"  # pattern-scan:ignore -- test fixture: the check under test must see a world-writable dir
 out="$(_aws_safe_bin_dir "${world_dir}/aws" 2>&1)"; rc=$?
 if [[ ${rc} -ne 0 && "${out}" == *"refusing to run the installer as root"* ]]; then
     ok "world-writable dir is rejected with an explanation"
@@ -92,7 +92,7 @@ fi
 # A world-writable parent makes an otherwise tidy child unsafe: the parent
 # could be used to swap the child out.
 parent_dir="${WORK_DIR}/parent"
-mkdir -p "${parent_dir}/child" && chmod 777 "${parent_dir}" && chmod 755 "${parent_dir}/child"
+mkdir -p "${parent_dir}/child" && chmod 777 "${parent_dir}" && chmod 755 "${parent_dir}/child"  # pattern-scan:ignore -- test fixture: the check under test must see a world-writable dir
 out="$(_aws_safe_bin_dir "${parent_dir}/child/aws" 2>&1)"; rc=$?
 if [[ ${rc} -ne 0 ]]; then
     ok "dir under a writable parent is rejected"
@@ -168,7 +168,7 @@ fi
 # ── _aws-install-linux fails fast, before download or elevation ──────────────
 
 STUB_BIN="${WORK_DIR}/stub-bin"
-mkdir "${STUB_BIN}" && chmod 777 "${STUB_BIN}"
+mkdir "${STUB_BIN}" && chmod 777 "${STUB_BIN}"  # pattern-scan:ignore -- test fixture: the check under test must see a world-writable dir
 for stub in aws curl unzip; do
     printf '#!/bin/sh\nexit 0\n' > "${STUB_BIN}/${stub}"
     chmod 755 "${STUB_BIN}/${stub}"
