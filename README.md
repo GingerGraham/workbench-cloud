@@ -18,7 +18,7 @@ wb add cloud
   writable by you; otherwise the install stops with an explanation and
   changes nothing.
 - `az*` aliases (`azl`/`azlo`/`azs`/`azsl`/`azss`) and `az-update`, which
-  runs `wb tools install azure`.
+  runs `wb tools install azure`. An alias is not defined when your shell already has an alias or function of that name; yours is kept, and `wb status` lists what was left alone.
 - Installers for `aws`, `azure` and `gcloud` — `wb tools install <name>`
   to install, `wb tools upgrade <name>` to update one you already have.
 
