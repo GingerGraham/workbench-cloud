@@ -4,6 +4,8 @@ All notable changes to `workbench-cloud` are documented here.
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-11-22
+
 ### Fixed
 
 - **The `az*` aliases (`azl`, `azlo`, `azs`, `azsl`, `azss`) no longer replace an alias or function you already
