@@ -22,11 +22,11 @@ _wb_alias_availability --needs "az (Azure CLI)" --install azure \
 command -v az &>/dev/null || return 0
 
 # ── aliases ───────────────────────────────────────────────────────────────────
-alias azl="az login"
-alias azlo="az logout"
-alias azs="az account show"
-alias azsl="az account list --output table"
-alias azss="az account set --subscription"
+workbench_alias_define azl cloud "az login"
+workbench_alias_define azlo cloud "az logout"
+workbench_alias_define azs cloud "az account show"
+workbench_alias_define azsl cloud "az account list --output table"
+workbench_alias_define azss cloud "az account set --subscription"
 
 # ── functions ─────────────────────────────────────────────────────────────────
 # Thin wrapper — the azure installer (shell/installers.sh) already handles

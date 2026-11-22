@@ -56,10 +56,13 @@ done
 
 # ── shell/azure.sh availability ──────────────────────────────────────────────
 # Stub the Core API call to record its arguments; PATH without az, so the
-# file's own guard returns right after the declaration.
+# file's own guard returns right after the declaration. A runner can have az in
+# /usr/bin (GitHub's do), so the alias helper is stubbed too: the aliases
+# themselves are not what this check is about.
 # shellcheck disable=SC2016 # expanded by the child bash, not here
 got="$(env -i PATH="/usr/bin:/bin" bash -c '
     _wb_alias_availability() { printf "%s|" "$@"; echo; }
+    workbench_alias_define() { :; }
     . "$1"
 ' _ "${REPO_ROOT}/shell/azure.sh" 2>&1)"
 want='--needs|az (Azure CLI)|--install|azure|_cloud_az_present|azl|azlo|azs|azsl|azss|az-update|'

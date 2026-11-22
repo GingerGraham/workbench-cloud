@@ -1,0 +1,5 @@
+azl=az login
+azlo=az logout
+azs=az account show
+azsl=az account list --output table
+azss=az account set --subscription
