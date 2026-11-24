@@ -4,6 +4,8 @@ All notable changes to `workbench-cloud` are documented here.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-24
+
 ### Added
 
 - **`wb tools install aws-emulator` installs and updates the AWS Emulator.**
