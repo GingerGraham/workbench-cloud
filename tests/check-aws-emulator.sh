@@ -374,7 +374,7 @@ if [[ -n "${verify_line}" && -n "${dnf_line}" && "${verify_line}" -lt "${dnf_lin
 else
     fail "package: verify (line ${verify_line:-none}) did not run before dnf (line ${dnf_line:-none})"
 fi
-expect_lacks "package: no --nogpgcheck style flag" "${calls}" "nogpgcheck"
+expect_lacks "package: no flag that skips the package manager's own signature check" "${calls}" "nogpgcheck"
 expect_has   "package: fresh install exit status 0" "${out}" "rc=0"
 
 pkg_world; rmstub aws-emulator; rmstub dnf; mkstub yum 'exit 0'
