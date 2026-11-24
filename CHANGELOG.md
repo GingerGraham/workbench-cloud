@@ -4,6 +4,25 @@ All notable changes to `workbench-cloud` are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- **`wb tools install aws-emulator` installs and updates the AWS Emulator.**
+  On rhel and debian family hosts it installs AWS's RPM or DEB. Everywhere
+  else (macOS, Arch, SUSE, rpm-ostree, unknown distributions) it builds a
+  local image with podman, Docker or Apple's `container`, from the same
+  package. Either way the package's signature is checked against AWS's
+  signing key before it is used, and it is installed from the checked file.
+  Running it again updates to the newest LTS release, does nothing when
+  you're current, and never downgrades. `WORKBENCH_AWS_EMULATOR_ROUTE`
+  and `WORKBENCH_AWS_EMULATOR_ENGINE` override the choices.
+- **`aws-emulator-server`, `aws-emulator-use`, `aws-emulator-list`,
+  `aws-emulator-stop` and `aws-emulator-update`.** Start an instance on the
+  first free port from 9297, bind it to an address you choose (it asks when
+  the host has more than one), and point a shell at it with
+  `aws-emulator-use`; `--off` restores your own AWS variables. A
+  non-loopback bind with `--auth off` is refused unless you pass
+  `--allow-unauthenticated`. See the README for the settings.
+
 ## [1.0.3] - 2026-11-22
 
 ### Fixed

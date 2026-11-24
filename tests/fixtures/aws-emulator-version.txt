@@ -1,0 +1,3 @@
+Version: 1.0.598
+Release date: 2026.11.24
+Commit: fc05151cc5015eb457b31a79871539af51fb9fdd
