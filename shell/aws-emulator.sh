@@ -165,46 +165,9 @@ _awsemu_ipv4_list() {
     fi | awk '$1 ~ /^127\./ { print; next } { rest = rest $0 "\n" } END { printf "%s", rest }'
 }
 
-# _awsemu_port_in_use <port> — 0 when anything listens on <port> on any
-# address, 1 when nothing does, 2 when there's no tool to tell.
-_awsemu_port_in_use() {
-    local port="$1"
-    if command -v ss >/dev/null 2>&1; then
-        ss -Hltn 2>/dev/null | awk -v p="${port}" '$4 ~ (":" p "$") { found = 1 } END { exit found ? 0 : 1 }'
-    elif command -v lsof >/dev/null 2>&1; then
-        [ -n "$(lsof -nP -iTCP:"${port}" -sTCP:LISTEN -t 2>/dev/null)" ]
-    else
-        return 2
-    fi
-}
-
-# _awsemu_pick_port <base> — the first free port from <base> to <base>+99.
-# A port that is free on one address but used on another counts as used:
-# deliberately conservative.
-_awsemu_pick_port() {
-    local base="$1" candidate last rc
-    candidate="${base}"
-    last=$((base + 99))
-    while [ "${candidate}" -le "${last}" ]; do
-        _awsemu_port_in_use "${candidate}"
-        rc=$?
-        case "${rc}" in
-            1)
-                printf '%s\n' "${candidate}"
-                return 0
-                ;;
-            0) ;;
-            *)
-                log_warn "aws-emulator: can't check ports (no ss or lsof) — trying ${base}; the emulator exits with code 1 if it's taken"
-                printf '%s\n' "${base}"
-                return 0
-                ;;
-        esac
-        candidate=$((candidate + 1))
-    done
-    log_error "aws-emulator: no free port from ${base} to ${last}"
-    return 1
-}
+# Port checks are the Core API's workbench_port_in_use and
+# workbench_port_pick (CORE_API_VERSION 1.12), moved there from this file so
+# workbench-containers can use them too (workbench-core D129).
 
 # _awsemu_bind_valid <address> — 0.0.0.0, or an IPv4 address of this host.
 _awsemu_bind_valid() {
@@ -465,12 +428,12 @@ aws-emulator-server() {
             return 2
         fi
         port="${port_opt}"
-        if _awsemu_port_in_use "${port}"; then
+        if workbench_port_in_use "${port}"; then
             log_error "aws-emulator-server: port ${port} is in use"
             return 1
         fi
     else
-        port="$(_awsemu_pick_port "${WORKBENCH_AWS_EMULATOR_PORT:-9297}")" || return 1
+        port="$(workbench_port_pick "${WORKBENCH_AWS_EMULATOR_PORT:-9297}" aws-emulator)" || return 1
     fi
 
     bind="$(_awsemu_choose_bind "${bind_opt}")" || return 1

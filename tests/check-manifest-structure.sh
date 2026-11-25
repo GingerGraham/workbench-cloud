@@ -45,10 +45,10 @@ for key in version core_api register; do
     fi
 done
 
-if [[ -n "${MANIFEST}" ]] && grep -q '^core_api: ">=1.10 <2.0"$' "${MANIFEST}"; then
-    ok "core_api requires 1.10 (workbench_alias_define; 1.8 added the core-generated getters)"
+if [[ -n "${MANIFEST}" ]] && grep -q '^core_api: ">=1.12 <2.0"$' "${MANIFEST}"; then
+    ok "core_api requires 1.12 (workbench_port_pick, D129; 1.10 added workbench_alias_define, 1.8 the core-generated getters)"
 else
-    fail "core_api must be \">=1.10 <2.0\""
+    fail "core_api must be \">=1.12 <2.0\""
 fi
 
 # Core generates get-cloud-functions from register.getters[] (D89). A
