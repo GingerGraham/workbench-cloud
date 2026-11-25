@@ -4,6 +4,12 @@ All notable changes to `workbench-cloud` are documented here.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-25
+
+### Changed
+
+- Refactored for Core API port helpers
+
 ## [1.1.0] - 2026-11-24
 
 ### Added
