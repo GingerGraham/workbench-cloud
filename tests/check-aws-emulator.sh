@@ -123,7 +123,7 @@ reset_world() {
     : > "${WORK}/images"
     rm -f "${WORK}/engine-down" "${WORK}/docker-secopts" "${WORK}/no-versions" "${WORK}/verify-fail" \
           "${WORK}/answers" "${WORK}/ansn" "${WORK}/captured.Dockerfile" "${WORK}/ctxfiles" "${WORK}/ostree-marker" \
-          "${WORK}/curl-fail"
+          "${WORK}/curl-fail" "${WORK}/ports-used" "${WORK}/pick-args"
     echo "1.0.598" > "${WORK}/next-version"
     echo "1.0.598" > "${WORK}/img-version"
     echo "1.0.598" > "${WORK}/installed-version"
@@ -136,6 +136,11 @@ log_info()  { printf '[INFO] %s\n' "$*" >&2; }
 log_warn()  { printf '[WARN] %s\n' "$*" >&2; }
 log_error() { printf '[ERROR] %s\n' "$*" >&2; }
 _wb_alias_availability() { printf '%s|' "$@" > "${WORK}/availability"; }
+# Stand-ins for the Core API's port helpers (workbench-core
+# lib/core/functions.sh, CORE_API_VERSION 1.12). The search itself is tested
+# in workbench-core's tests/check-port-helpers.sh.
+workbench_port_in_use() { grep -qx "$1" "${WORK}/ports-used" 2>/dev/null; }
+workbench_port_pick() { printf '%s|' "$@" > "${WORK}/pick-args"; printf '%s\n' "$1"; }
 get-elevation-command() { echo sudo; }
 # A fake download: versions.json from the fixture, anything else a dummy
 # file. DL_FAIL is a glob of URLs that fail.
@@ -510,31 +515,8 @@ out="$(install_ctr Mac arm64)"
 expect_has "container: on macOS a missing gpgv says brew install gnupg" "${out}" "brew install gnupg"
 
 # ── 9. ports ─────────────────────────────────────────────────────────────────
-# ss_listen <port>... — a stub `ss` that reports these ports as listening.
-ss_listen() {
-    local lines="" p
-    for p in "$@"; do lines="${lines}LISTEN 0 4096 0.0.0.0:${p} 0.0.0.0:*\n"; done
-    mkstub ss "printf '${lines}'"
-}
 for sh in ${SHELLS}; do
-    reset_world; ss_listen 9297 9298
-    expect_eq "${sh}: pick_port skips 9297 and 9298 → 9299" "$(run_in "${sh}" -- '_awsemu_pick_port 9297')" "9299"
-    reset_world; mkstub ss ': '
-    expect_eq "${sh}: pick_port takes the base port when it is free" "$(run_in "${sh}" -- '_awsemu_pick_port 9297')" "9297"
-    reset_world; ss_listen 9297; mkstub ss "printf 'LISTEN 0 4096 [::]:9297 [::]:*\n'"
-    expect_eq "${sh}: pick_port counts a port used on another address (IPv6) as used" "$(run_in "${sh}" -- '_awsemu_pick_port 9297')" "9298"
-    reset_world
-    all=""; p=9297; while [[ ${p} -le 9396 ]]; do all="${all} ${p}"; p=$((p + 1)); done
-    # shellcheck disable=SC2086 # one argument per port
-    ss_listen ${all}
-    out="$(run_in "${sh}" -- '_awsemu_pick_port 9297; echo "rc=$?"')"
-    expect_has "${sh}: pick_port fails when the whole range is used" "${out}" "no free port from 9297 to 9396"
-    expect_has "${sh}: ... with a non-zero status" "${out}" "rc=1"
-    reset_world
-    out="$(run_in "${sh}" -- '_awsemu_pick_port 9297')"
-    expect_has "${sh}: pick_port without ss or lsof warns once ..." "${out}" "[WARN] aws-emulator: can't check ports (no ss or lsof) — trying 9297"
-    expect_has "${sh}: ... and uses the base port" "${out}" "9297"
-    reset_world; ss_listen 9297
+    reset_world; echo 9297 > "${WORK}/ports-used"
     out="$(run_in "${sh}" WORKBENCH_AWS_EMULATOR_ROUTE=package WORKBENCH_AWS_EMULATOR_BIND=127.0.0.1 -- 'aws-emulator-server --port 9297; echo "rc=$?"')"
     expect_has "${sh}: server: an explicit --port that is in use is refused" "${out}" "port 9297 is in use"
     expect_has "${sh}: ... with status 1" "${out}" "rc=1"
@@ -544,6 +526,9 @@ for sh in ${SHELLS}; do
     expect_has "${sh}: server: a privileged port is refused" "${out}" "--port must be from 1024 to 65535 (got 80)"
     out="$(run_in "${sh}" WORKBENCH_AWS_EMULATOR_ROUTE=package -- 'aws-emulator-server --port abc; echo "rc=$?"')"
     expect_has "${sh}: server: a non-numeric port is refused" "${out}" "--port must be a number"
+    reset_world
+    out="$(run_in "${sh}" WORKBENCH_AWS_EMULATOR_ROUTE=package WORKBENCH_AWS_EMULATOR_BIND=127.0.0.1 WORKBENCH_AWS_EMULATOR_PORT=9400 -- 'aws-emulator-server; echo "rc=$?"')"
+    expect_eq "${sh}: server: without --port it asks the Core API for a free port from WORKBENCH_AWS_EMULATOR_PORT, labelled aws-emulator" "$(cat "${WORK}/pick-args" 2>/dev/null)" "9400|aws-emulator|"
 done
 
 # ── 10. _awsemu_ipv4_list ────────────────────────────────────────────────────
